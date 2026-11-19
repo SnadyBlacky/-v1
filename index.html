@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>讀戰100 - 守護神圖鑑</title>
+    <!-- 引入 Tailwind CSS 以實現跨裝置響應式與遊戲風格設計 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts 思源黑體 (Noto Sans TC) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            /* 深藍星空漸層背景，營造熱血遊戲氛圍 */
+            background: radial-gradient(circle at top center, #1e293b 0%, #0f172a 60%, #020617 100%);
+            color: #f8fafc;
+        }
+
+        /* 金色發光邊框效果 */
+        .gold-glow {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.35), inset 0 0 10px rgba(245, 158, 11, 0.2);
+        }
+        .gold-glow-hover:hover {
+            box-shadow: 0 0 25px rgba(251, 191, 36, 0.6), inset 0 0 12px rgba(251, 191, 36, 0.3);
+        }
+
+        /* 卡片進場與彈窗動畫 */
+        @keyframes modalPop {
+            0% {
+                opacity: 0;
+                transform: scale(0.9) translateY(15px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        .animate-modal-pop {
+            animation: modalPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* 自訂捲軸樣式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f59e0b;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950">
+
+    <!-- 規則 1：登入驗證畫面（未登入時顯示，登入成功後進入圖鑑首頁） -->
+    <div id="loginOverlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-md">
+        <div class="bg-slate-900 border-2 border-amber-400/80 rounded-3xl max-w-md w-full p-7 sm:p-9 shadow-2xl gold-glow text-center animate-modal-pop relative overflow-hidden">
+            <!-- 背景光暈裝飾 -->
+            <div class="absolute -top-16 -right-16 w-40 h-40 bg-amber-500/15 rounded-full blur-2xl pointer-events-none"></div>
+
+            <!-- 品牌徽章 -->
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-600 flex items-center justify-center text-slate-950 font-black text-3xl shadow-lg shadow-amber-500/30 border-2 border-amber-200">
+                戰
+            </div>
+
+            <h1 class="text-2xl sm:text-3xl font-black tracking-wider bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500 bg-clip-text text-transparent mb-1.5">
+                讀戰100
+            </h1>
+            <p class="text-sm text-slate-400 mb-6">輸入專屬通行密碼，開啟你的守護神圖鑑</p>
+
+            <!-- 登入表單 -->
+            <form id="loginForm" class="space-y-4 text-left">
+                <div>
+                    <label for="passwordInput" class="block text-xs font-bold text-amber-300 tracking-wider mb-1.5">
+                        通行密碼
+                    </label>
+                    <input 
+                        type="password" 
+                        id="passwordInput" 
+                        required
+                        placeholder="請輸入密碼（範例：1111、2222、3333）"
+                        class="w-full px-4 py-3.5 rounded-xl bg-slate-950 border-2 border-slate-700 focus:border-amber-400 focus:outline-none text-white placeholder-slate-500 text-base tracking-widest transition-colors"
+                    >
+                </div>
+
+                <!-- 錯誤或提示訊息顯示區 -->
+                <div id="loginMessage" class="hidden rounded-xl px-4 py-2.5 text-sm font-bold text-center"></div>
+
+                <button 
+                    type="submit" 
+                    id="loginSubmitBtn"
+                    class="w-full py-3.5 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 active:scale-[0.98] text-slate-950 font-black text-base tracking-wider shadow-lg shadow-amber-500/25 transition-all cursor-pointer flex items-center justify-center space-x-2">
+                    <span>進入圖鑑</span>
+                </button>
+            </form>
+
+            <p class="text-[11px] text-slate-500 mt-5">
+                連線至 Google 試算表後台即時驗證身分
+            </p>
+        </div>
+    </div>
+
+    <!-- 頂部導覽列：品牌標識與產品定位 -->
+    <header class="w-full bg-slate-950/80 backdrop-blur-md border-b border-amber-500/30 sticky top-0 z-20">
+        <div class="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <!-- 遊戲徽章圖示 -->
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-600 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-amber-500/30 border border-amber-200">
+                    戰
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black tracking-wider bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500 bg-clip-text text-transparent">
+                        讀戰100
+                    </h1>
+                    <p class="text-[11px] sm:text-xs text-slate-400 tracking-wide">學測衝刺・守護神收集圖鑑</p>
+                </div>
+            </div>
+
+            <!-- 右側快速提示標籤 -->
+            <div class="flex items-center space-x-3">
+                <div class="hidden sm:flex items-center space-x-2 bg-slate-900/90 border border-slate-700/80 px-3 py-1.5 rounded-full text-xs text-amber-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    <span>複習答題・解鎖你的專屬戰力</span>
+                </div>
+                <!-- 登出切換帳號按鈕 -->
+                <button id="logoutBtn" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold text-slate-300 transition-colors cursor-pointer">
+                    切換帳號
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="flex-grow max-w-5xl w-full mx-auto px-4 py-6 sm:py-8 space-y-6 sm:space-y-8">
+
+        <!-- 規則 2：上方玩家資訊面板（會員姓名 + 收集進度） -->
+        <section aria-label="玩家資訊與收集進度" class="bg-slate-900/90 border-2 border-amber-500/40 rounded-2xl p-5 sm:p-6 gold-glow relative overflow-hidden">
+            <!-- 背景裝飾光暈 -->
+            <div class="absolute -right-12 -top-12 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <!-- 會員姓名區塊 -->
+                <div class="flex items-center space-x-4">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-b from-blue-600 to-indigo-900 border-2 border-amber-400 flex items-center justify-center shadow-md shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="inline-block px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-xs font-bold tracking-wider mb-1 border border-amber-500/30">
+                            考生戰士
+                        </span>
+                        <h2 id="memberName" class="text-2xl sm:text-3xl font-black text-white tracking-wide">
+                            第 1 組
+                        </h2>
+                    </div>
+                </div>
+
+                <!-- 守護神收集進度區塊 -->
+                <div class="sm:text-right flex-grow sm:max-w-xs">
+                    <div class="flex items-baseline justify-between sm:justify-end gap-2 mb-1.5">
+                        <span class="text-sm font-bold text-slate-300">守護神收集進度</span>
+                        <span id="progressText" class="text-2xl sm:text-3xl font-black text-amber-400 tracking-wider">
+                            6／12
+                        </span>
+                    </div>
+                    <!-- 視覺化進度條 -->
+                    <div class="w-full h-3.5 bg-slate-950 rounded-full p-0.5 border border-slate-700 overflow-hidden">
+                        <div id="progressBar" class="h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 rounded-full transition-all duration-700" style="width: 50%;"></div>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1.5">點擊已解鎖的守護神，查看能力與故事介紹！</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 規則 3、4、5：12 格守護神圖鑑網格（電腦與手機皆維持一排 4 格，手機端自動調整間距與字級） -->
+        <section aria-label="守護神圖鑑列表">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <span class="w-1.5 h-6 bg-amber-400 rounded-full"></span>
+                    <h3 class="text-lg sm:text-xl font-black text-white tracking-wide">守護神圖鑑</h3>
+                </div>
+                <span class="text-xs sm:text-sm text-amber-300/90 font-medium">
+                    已點亮 <span class="font-bold">6</span> 尊守護神
+                </span>
+            </div>
+
+            <!-- 12 格卡片容器：grid-cols-4 確保一排 4 格 -->
+            <div id="guardianGrid" class="grid grid-cols-4 gap-2.5 sm:gap-5">
+                <!-- 由 JavaScript 動態渲染 12 張守護神卡片 -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 頁尾資訊 -->
+    <footer class="w-full border-t border-slate-800/80 bg-slate-950/60 py-5 px-4 text-center text-xs text-slate-400">
+        <p>《讀戰100》— 讓每一次複習，都成為召喚守護神的力量</p>
+    </footer>
+
+    <!-- 規則 4：已解鎖守護神詳細資料彈窗 (Modal) -->
+    <div 
+        id="detailModal" 
+        class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+        role="dialog" 
+        aria-modal="true" 
+        aria-labelledby="modalGuardianName">
+        
+        <!-- 彈窗卡牌容器 -->
+        <div class="bg-slate-900 border-2 border-amber-400 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl gold-glow animate-modal-pop">
+            
+            <!-- 頂部守護神代表色塊展示區 -->
+            <div id="modalColorBanner" class="h-44 sm:h-52 w-full flex flex-col items-center justify-center p-6 relative transition-colors duration-300">
+                <!-- 編號標籤 -->
+                <span id="modalNumberBadge" class="absolute top-4 left-4 px-3 py-1 rounded-full bg-slate-950/60 backdrop-blur-md text-amber-300 text-xs font-black tracking-widest border border-amber-400/40">
+                    NO. 01
+                </span>
+
+                <!-- 關閉按鈕 (右上角 X) -->
+                <button 
+                    id="closeTopBtn" 
+                    type="button" 
+                    aria-label="關閉視窗"
+                    class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-950/60 hover:bg-slate-950 text-white flex items-center justify-center transition-colors cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+
+                <!-- 色塊中央顯示守護神名稱 -->
+                <div class="px-6 py-3 rounded-2xl bg-slate-950/40 backdrop-blur-sm border border-white/30 shadow-lg">
+                    <span id="modalBannerTitle" class="text-2xl sm:text-3xl font-black text-white tracking-widest drop-shadow">
+                        守護神名稱
+                    </span>
+                </div>
+            </div>
+
+            <!-- 下方卡片介紹內容區 -->
+            <div class="p-6 sm:p-7">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 id="modalGuardianName" class="text-xl sm:text-2xl font-black text-amber-300">
+                        守護神名稱
+                    </h4>
+                    <span id="modalSubjectTag" class="px-3 py-1 rounded-lg bg-amber-500/20 text-amber-300 text-xs font-bold border border-amber-500/30">
+                        專屬領域
+                    </span>
+                </div>
+
+                <!-- 介紹內文框 -->
+                <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 mb-6">
+                    <p id="modalDescription" class="text-slate-200 text-sm sm:text-base leading-relaxed">
+                        這裡會顯示守護神的詳細介紹。
+                    </p>
+                </div>
+
+                <!-- 底部確認關閉按鈕 -->
+                <button 
+                    id="closeModalBtn" 
+                    type="button"
+                    class="w-full py-3.5 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 active:scale-[0.98] text-slate-950 font-black text-base tracking-wider shadow-lg shadow-amber-500/25 transition-all cursor-pointer">
+                    收下祝福，繼續備戰！
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 未解鎖提示小浮標 (Toast 訊息，取代 alert) -->
+    <div 
+        id="lockedToast" 
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 hidden items-center space-x-2.5 bg-slate-800/95 border border-slate-600 text-slate-200 px-5 py-3 rounded-full shadow-2xl text-sm font-medium backdrop-blur-md">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-400 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+        </svg>
+        <span>此守護神尚未解鎖！快去完成複習答題吧！</span>
+    </div>
+
+    <!-- 應用程式資料與互動邏輯 -->
+    <script>
+        // ==========================================
+        // 【重要設定】請將您部署好的 Google Apps Script 網頁應用程式網址貼在下方引號內！
+        // 若留空，網頁會先使用內建的 3 組範例帳號（1111、2222、3333）讓您測試效果
+        // ==========================================
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/library/d/15uv2mw0_aa1ar8g4OhMuqGl1RE2ETRHbexgDcVAN2kWDZDQl1qBTwKq4/1"; 
+
+        // 假資料：會員資訊與 12 隻守護神（6 隻已解鎖、6 隻未解鎖）
+        const userData = {
+            name: "第 1 組",
+            guardians: [
+                {
+                    id: 1,
+                    name: "赤焰文昌",
+                    subject: "國文領域",
+                    unlocked: true,
+                    colorClass: "from-rose-500 to-red-700",
+                    hexColor: "#e11d48",
+                    description: "掌管古文鑑賞與閱讀理解的烈焰神獸。每當你讀懂一篇艱澀的文言文，牠身上的火焰就會更加熾熱，助你在考場上文思泉湧！"
+                },
+                {
+                    id: 2,
+                    name: "蒼穹獅鷲",
+                    subject: "英文領域",
+                    unlocked: true,
+                    colorClass: "from-sky-400 to-blue-700",
+                    hexColor: "#0284c7",
+                    description: "翱翔於單字與文法雲端的天空霸主。擁有銳利雙眼，能幫你一眼看穿長難句的結構陷阱，輕鬆攻克克漏字與閱讀測驗。"
+                },
+                {
+                    id: 3,
+                    name: "星辰智狐",
+                    subject: "數學領域",
+                    unlocked: true,
+                    colorClass: "from-indigo-500 to-purple-700",
+                    hexColor: "#4f46e5",
+                    description: "九尾閃耀著幾何光芒的靈狐。擅長在函數與空間向量中尋找最短解題路徑，陪伴你在無數次計算演練中保持冷靜與精準。"
+                },
+                {
+                    id: 4,
+                    name: "翡翠森靈",
+                    subject: "生物領域",
+                    unlocked: true,
+                    colorClass: "from-emerald-400 to-teal-700",
+                    hexColor: "#059669",
+                    description: "誕生於生命科學之樹的古老精靈。熟知細胞分裂與生態演替的奧秘，只要持續累積觀念，牠就會為你展開堅不可摧的知識護盾。"
+                },
+                {
+                    id: 5,
+                    name: "雷霆戰虎",
+                    subject: "物理領域",
+                    unlocked: true,
+                    colorClass: "from-amber-400 to-orange-600",
+                    hexColor: "#d97706",
+                    description: "駕馭力學與電磁波的狂野猛虎。將枯燥的公式轉化為奔騰的雷電能量，讓你在面對運動學與能量守恆題型時無往不利！"
+                },
+                {
+                    id: 6,
+                    name: "紫晶煉金龍",
+                    subject: "化學領域",
+                    unlocked: true,
+                    colorClass: "from-fuchsia-500 to-purple-800",
+                    hexColor: "#c026d3",
+                    description: "精通元素週期表與酸鹼平衡的神秘巨龍。能將零散的化學反應式熔煉成純粹的得分結晶，見證你每一次實驗題的突破。"
+                },
+                {
+                    id: 7,
+                    name: "岩鎧巨像",
+                    subject: "地科領域",
+                    unlocked: false,
+                    colorClass: "from-stone-500 to-stone-700",
+                    hexColor: "#57534e",
+                    description: "沉睡於板塊交界處的守護巨人。完成地質與天文單元複習後即可喚醒！"
+                },
+                {
+                    id: 8,
+                    name: "時光沙漏靈",
+                    subject: "歷史領域",
+                    unlocked: false,
+                    colorClass: "from-yellow-600 to-amber-800",
+                    hexColor: "#b45309",
+                    description: "穿梭於古今朝代脈絡的時間使者。解鎖後將為你串聯起所有關鍵歷史事件。"
+                },
+                {
+                    id: 9,
+                    name: "風行羅盤獸",
+                    subject: "地理領域",
+                    unlocked: false,
+                    colorClass: "from-cyan-500 to-teal-800",
+                    hexColor: "#0891b2",
+                    description: "掌握氣候帶與地形變遷的領航神獸。完成區域地理挑戰即可與牠締結契約。"
+                },
+                {
+                    id: 10,
+                    name: "天秤裁決者",
+                    subject: "公民領域",
+                    unlocked: false,
+                    colorClass: "from-blue-600 to-slate-800",
+                    hexColor: "#2563eb",
+                    description: "象徵法律正義與經濟秩序的聖潔守護者。累積足夠答題數即可解鎖！"
+                },
+                {
+                    id: 11,
+                    name: "炎陽不死鳥",
+                    subject: "模考突破",
+                    unlocked: false,
+                    colorClass: "from-orange-500 to-red-800",
+                    hexColor: "#ea580c",
+                    description: "在無數次模擬考歷練中浴火重生的傳說神鳥，象徵永不放棄的考前意志。"
+                },
+                {
+                    id: 12,
+                    name: "聖光麒麟",
+                    subject: "全科制霸",
+                    unlocked: false,
+                    colorClass: "from-yellow-300 to-amber-600",
+                    hexColor: "#eab308",
+                    description: "唯有集結眾神之力、完成百戰複習的考生才能召喚的終極滿級分守護神！"
+                }
+            ]
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginOverlay = document.getElementById('loginOverlay');
+            const loginForm = document.getElementById('loginForm');
+            const passwordInput = document.getElementById('passwordInput');
+            const loginMessage = document.getElementById('loginMessage');
+            const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            const memberNameEl = document.getElementById('memberName');
+            const progressTextEl = document.getElementById('progressText');
+            const progressBarEl = document.getElementById('progressBar');
+            const guardianGridEl = document.getElementById('guardianGrid');
+            // 0. 處理密碼登入驗證（連線至 Google Apps Script）
+            async function handleLogin(e) {
+                e.preventDefault();
+                const password = passwordInput.value.trim();
+                if (!password) return;
+
+                // 顯示載入中狀態
+                loginSubmitBtn.disabled = true;
+                loginSubmitBtn.innerHTML = `<span>驗證身分中...</span>`;
+                loginMessage.classList.add('hidden');
+
+                try {
+                    let result = null;
+
+                    if (GAS_WEB_APP_URL && GAS_WEB_APP_URL.startsWith("https://")) {
+                        // 正式連線到您的 Google 試算表 Apps Script
+                        const response = await fetch(`${GAS_WEB_APP_URL}?password=${encodeURIComponent(password)}`);
+                        result = await response.json();
+                    } else {
+                        // 尚未填入網址時的本地預覽模式（對應試算表的 3 組範例帳號）
+                        await new Promise(resolve => setTimeout(resolve, 400));
+                        const fallbackAccounts = {
+                            "1111": "陳小華",
+                            "2222": "林佳穎",
+                            "3333": "張志豪"
+                        };
+                        if (fallbackAccounts[password]) {
+                            result = { success: true, name: fallbackAccounts[password] };
+                        } else {
+                            result = { success: false, message: "密碼不正確" };
+                        }
+                    }
+
+                    if (result && result.success) {
+                        // 密碼正確：更新顯示為該會員的姓名，並隱藏登入畫面進入首頁
+                        userData.name = result.name;
+                        renderHeaderStats();
+                        loginOverlay.classList.add('hidden');
+                        passwordInput.value = "";
+                    } else {
+                        // 密碼錯誤：顯示「密碼不正確」
+                        showLoginError(result.message || "密碼不正確");
+                    }
+                } catch (error) {
+                    showLoginError("連線失敗，請確認網路或 Apps Script 部署權限");
+                } finally {
+                    loginSubmitBtn.disabled = false;
+                    loginSubmitBtn.innerHTML = `<span>進入圖鑑</span>`;
+                }
+            }
+
+            function showLoginError(msg) {
+                loginMessage.textContent = msg;
+                loginMessage.className = "rounded-xl px-4 py-2.5 text-sm font-bold text-center bg-rose-500/20 border border-rose-500/50 text-rose-300 block";
+            }
+
+            // 登出 / 切換帳號
+            logoutBtn.addEventListener('click', () => {
+                loginMessage.classList.add('hidden');
+                passwordInput.value = "";
+                loginOverlay.classList.remove('hidden');
+                passwordInput.focus();
+            });
+
+            loginForm.addEventListener('submit', handleLogin);
+
+            // 1. 渲染會員名稱與收集進度
+            function renderHeaderStats() {
+                memberNameEl.textContent = userData.name;
+                const totalCount = userData.guardians.length;
+                const unlockedCount = userData.guardians.filter(g => g.unlocked).length;
+                
+                progressTextEl.textContent = `${unlockedCount}／${totalCount}`;
+                const percentage = Math.round((unlockedCount / totalCount) * 100);
+                progressBarEl.style.width = `${percentage}%`;
+            }
+
+            // 2. 渲染 12 格守護神圖鑑
+            function renderGuardianGrid() {
+                guardianGridEl.innerHTML = '';
+
+                userData.guardians.forEach((guardian) => {
+                    const cardBtn = document.createElement('button');
+                    cardBtn.type = 'button';
+                    const formattedNo = String(guardian.id).padStart(2, '0');
+
+                    if (guardian.unlocked) {
+                        // 【已解鎖狀態】：顯示專屬顏色色塊 + 守護神名稱 + 金色遊戲邊框
+                        cardBtn.className = `group relative aspect-[3/4] rounded-xl sm:rounded-2xl bg-gradient-to-br ${guardian.colorClass} p-2 sm:p-3.5 flex flex-col justify-between border-2 border-amber-400/90 gold-glow gold-glow-hover transition-all duration-200 hover:-translate-y-1 active:scale-95 cursor-pointer text-left overflow-hidden`;
+                        cardBtn.setAttribute('aria-label', `已解鎖守護神：${guardian.name}，點擊查看介紹`);
+
+                        cardBtn.innerHTML = `
+                            <!-- 卡片頂部編號與已解鎖星星 -->
+                            <div class="w-full flex items-center justify-between z-10">
+                                <span class="text-[10px] sm:text-xs font-black px-1.5 sm:px-2 py-0.5 rounded bg-slate-950/50 text-amber-300 tracking-wider">
+                                    #${formattedNo}
+                                </span>
+                                <span class="text-amber-300 drop-shadow text-xs sm:text-sm">★</span>
+                            </div>
+
+                            <!-- 色塊中央代表文字（取代圖片素材） -->
+                            <div class="my-auto w-full flex flex-col items-center justify-center text-center z-10 px-0.5">
+                                <div class="w-full py-2 sm:py-3 rounded-lg sm:rounded-xl bg-slate-950/30 backdrop-blur-[2px] border border-white/25 shadow-inner">
+                                    <span class="block text-xs sm:text-base md:text-lg font-black text-white tracking-wider drop-shadow leading-tight">
+                                        ${guardian.name}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- 卡片底部領域標籤 -->
+                            <div class="w-full text-center z-10">
+                                <span class="inline-block text-[10px] sm:text-xs font-bold text-white/95 bg-slate-950/40 px-2 py-0.5 rounded-full truncate max-w-full">
+                                    ${guardian.subject}
+                                </span>
+                            </div>
+
+                            <!-- 懸停光澤掃過效果 -->
+                            <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/15 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                        `;
+
+                        // 點擊已解鎖卡片開啟詳細介紹彈窗
+                        cardBtn.addEventListener('click', () => openDetailModal(guardian));
+
+                    } else {
+                        // 【未解鎖狀態】：灰色剪影（灰色色塊加問號）
+                        cardBtn.className = `relative aspect-[3/4] rounded-xl sm:rounded-2xl bg-slate-800/85 p-2 sm:p-3.5 flex flex-col justify-between border-2 border-slate-700/80 transition-all duration-200 hover:border-slate-500 active:scale-95 cursor-pointer text-left overflow-hidden`;
+                        cardBtn.setAttribute('aria-label', `未解鎖守護神編號 ${formattedNo}`);
+
+                        cardBtn.innerHTML = `
+                            <!-- 卡片頂部灰色編號 -->
+                            <div class="w-full flex items-center justify-between">
+                                <span class="text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded bg-slate-900/80 text-slate-500 tracking-wider">
+                                    #${formattedNo}
+                                </span>
+                            </div>
+
+                            <!-- 灰色剪影與問號 -->
+                            <div class="my-auto flex flex-col items-center justify-center">
+                                <div class="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-slate-700/70 border border-slate-600/80 flex items-center justify-center shadow-inner mb-1">
+                                    <span class="text-xl sm:text-3xl font-black text-slate-400 select-none">?</span>
+                                </div>
+                            </div>
+
+                            <!-- 底部未解鎖提示 -->
+                            <div class="w-full text-center">
+                                <span class="inline-block text-[10px] sm:text-xs font-medium text-slate-500 tracking-wider">
+                                    尚未解鎖
+                                </span>
+                            </div>
+                        `;
+
+                        // 點擊未解鎖卡片顯示提示小浮標
+                        cardBtn.addEventListener('click', showLockedToast);
+                    }
+
+                    guardianGridEl.appendChild(cardBtn);
+                });
+            }
+
+            // 3. 開啟守護神詳細介紹彈窗
+            function openDetailModal(guardian) {
+                const formattedNo = String(guardian.id).padStart(2, '0');
+                
+                // 設定色塊背景與文字
+                modalColorBanner.className = `h-44 sm:h-52 w-full flex flex-col items-center justify-center p-6 relative bg-gradient-to-br ${guardian.colorClass}`;
+                modalNumberBadge.textContent = `NO. ${formattedNo}`;
+                modalBannerTitle.textContent = guardian.name;
+                modalGuardianName.textContent = guardian.name;
+                modalSubjectTag.textContent = guardian.subject;
+                modalDescription.textContent = guardian.description;
+
+                detailModal.classList.remove('hidden');
+                detailModal.classList.add('flex');
+                closeModalBtn.focus();
+            }
+
+            // 4. 關閉彈窗
+            function closeDetailModal() {
+                detailModal.classList.add('hidden');
+                detailModal.classList.remove('flex');
+            }
+
+            // 5. 顯示未解鎖提示浮標
+            function showLockedToast() {
+                if (toastTimeout) {
+                    clearTimeout(toastTimeout);
+                }
+                lockedToast.classList.remove('hidden');
+                lockedToast.classList.add('flex');
+
+                toastTimeout = setTimeout(() => {
+                    lockedToast.classList.add('hidden');
+                    lockedToast.classList.remove('flex');
+                }, 2200);
+            }
+
+            // 綁定彈窗關閉事件
+            closeTopBtn.addEventListener('click', closeDetailModal);
+            closeModalBtn.addEventListener('click', closeDetailModal);
+            detailModal.addEventListener('click', (e) => {
+                if (e.target === detailModal) {
+                    closeDetailModal();
+                }
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !detailModal.classList.contains('hidden')) {
+                    closeDetailModal();
+                }
+            });
+
+            // 初始化畫面
+            renderHeaderStats();
+            renderGuardianGrid();
+        });
+    </script>
+</body>
+</html>
